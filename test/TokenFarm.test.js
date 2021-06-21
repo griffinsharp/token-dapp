@@ -31,14 +31,14 @@ contract('TokenFarm', ([owner, investor]) => {
     await daiToken.transfer(investor, tokens('100'), metaData)
   })
 
-  describe('Mock Dai deployment', async () => {
+  describe('Mock Dai Deployment', async () => {
     it('has a name', async () => {
       const name = await daiToken.name();
       assert.equal(name, 'Mock DAI Token');
     })
   })
 
-  describe('DApp Token deployment', async () => {
+  describe('DApp Token Deployment', async () => {
     it('has a name', async () => {
       const name = await dappToken.name();
       assert.equal(name, 'DApp Token');
@@ -50,7 +50,7 @@ contract('TokenFarm', ([owner, investor]) => {
     });
   })
 
-  describe('Token Farm', async () => {
+  describe('Token Farm Deployment', async () => {
     it('has a name', async () => {
       const name = await tokenFarm.name();
       assert.equal(name, 'Dapp Token Farm');
@@ -58,7 +58,38 @@ contract('TokenFarm', ([owner, investor]) => {
 
     it('has a contract with dapp tokens', async () => {
       let balance = await dappToken.balanceOf(tokenFarm.address);
-      assert.equal(balance.toString(), tokens('1000000'))
+      assert.equal(balance.toString(), tokens('1000000'));
+    });
+  })
+
+  describe('Farming Tokens', async () => {
+    it('rewards investors for staking mDai tokens', async () => {
+      let result;
+
+      // Check investor balance befores staking / before stakeToken func is called
+      result = await daiToken.balanceOf(investor);
+      assert.equal(result.toString(), tokens('100'), 'Investor Mock DAI wallet balance correct before staking');
+
+      // Approve staking of mock dai tokens
+      // Stake mock dai tokens in the token farm
+      const metaData = {from: investor};
+      await daiToken.approve(tokenFarm.address, tokens('100'), metaData);
+      await tokenFarm.stakeTokens(tokens('100'), metaData);
+
+      // Check staking results
+      const investorDaiBal = await daiToken.balanceOf(investor);
+      assert.equal(investorDaiBal.toString(), tokens('0'), 'Investor Mock DAI wallet balance correct after staking')
+
+      const tokenFarmDaiBal = await daiToken.balanceOf(tokenFarm.address);
+      assert.equal(tokenFarmDaiBal.toString(), tokens('100'), 'Token Farm Mock DAI balance correct after staking')
+
+      // Check staking balance
+      const tokenFarmStakingBal = await tokenFarm.stakingBalance(investor);
+      assert.equal(tokenFarmStakingBal.toString(), tokens('100'), 'Investor staking balance correct after staking')
+
+      // Check isStaking true
+      const isStaking = await tokenFarm.isStaking(investor);
+      assert.equal(isStaking.toString(), 'true', 'investor staking status correct after staking');
     });
   })
 });
