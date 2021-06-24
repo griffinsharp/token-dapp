@@ -1,7 +1,8 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
 
-import Navbar from './Navbar'
-import './App.css'
+import Main from './Main';
+import Navbar from './Navbar';
+import './App.css';
 
 import Web3 from 'web3';
 
@@ -22,6 +23,8 @@ class App extends Component {
       stakingBalance: '0',
       loading: true
     }
+    this.stakeTokens = this.stakeTokens.bind(this);
+    this.unstakeTokens = this.unstakeTokens.bind(this);
   }
 
   async componentDidMount() {
@@ -50,7 +53,6 @@ class App extends Component {
       // Get balance of Dai
       const daiTokenBalance = await daiToken.methods.balanceOf(this.state.account).call();
       this.setState({daiTokenBalance: daiTokenBalance.toString()});
-      console.log({daiTokenBalance});
     } else {
       window.alert('DaiToken contract not deployed to detected network!')
     }
@@ -63,7 +65,6 @@ class App extends Component {
       // Get balance of Dapp
       const dappTokenBalance = await dappToken.methods.balanceOf(this.state.account).call();
       this.setState({dappTokenBalance: dappTokenBalance.toString()});
-      console.log({dappTokenBalance});
     } else {
       window.alert('dappToken contract not deployed to detected network!')
     }
@@ -74,9 +75,8 @@ class App extends Component {
       this.setState({tokenFarm});
 
       // Get staking balance
-      const tokenFarmBalance = await tokenFarm.methods.stakingBalance(this.state.account).call();
-      this.setState({tokenFarmBalance: tokenFarmBalance.toString()});
-      console.log({tokenFarmBalance});
+      const stakingBalance = await tokenFarm.methods.stakingBalance(this.state.account).call();
+      this.setState({stakingBalance: stakingBalance.toString()});
     } else {
       window.alert('tokenFarm contract not deployed to detected network!')
     }
@@ -96,6 +96,35 @@ class App extends Component {
     }
   }
 
+  stakeTokens(amount) {
+    this.setState({loading: true});
+    this.state.daiToken.methods.approve(this.state.tokenFarm._address, amount).send({from: this.state.account}).on('transactionHash', (hash) => {
+      this.state.tokenFarm.methods.stakeTokens(amount).send({from: this.state.account}).on('transactionHash', (hash) => {
+        this.setState({loading: false});
+      })
+    })
+  }
+
+  unstakeTokens(amount) {
+    this.setState({loading: true});
+    this.state.tokenFarm.methods.unstakeTokens().send({from: this.state.account}).on('transactionHash', (hash) => {
+      this.setState({loading: false});
+    })
+  }
+
+  // Helpers
+  _getContent() {
+    return this.state.loading
+      ? <p id="loader" className="text-center">Loading...</p>
+      : <Main
+          daiTokenBalance={this.state.daiTokenBalance}
+          dappTokenBalance={this.state.dappTokenBalance}
+          stakingBalance={this.state.stakingBalance}
+          stakeTokens={this.stakeTokens}
+          unstakeTokens={this.unstakeTokens}
+          />
+  }
+
   render() {
     return (
       <div>
@@ -110,7 +139,7 @@ class App extends Component {
                   rel="noopener noreferrer"
                   >
                 </a>
-                <h1>Hello, World!</h1>
+                {this._getContent()}
               </div>
             </main>
           </div>
